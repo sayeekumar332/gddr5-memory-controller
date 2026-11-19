@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  repo-structure:
+    name: repo-structure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required files and directories exist
+        run: |
+          for p in README.md CONTRIBUTING.md PROVENANCE.md docs/microarchitecture.md rtl tb cocotb pyuvm sva scripts; do
+            test -e "$p" || { echo "missing: $p"; exit 1; }
+          done
+      - name: Reject committed PDFs (vendor standards must not be redistributed)
+        run: |
+          if git ls-files | grep -qi '\.pdf$'; then
+            echo "PDF files must not be committed."; exit 1
+          fi
+  # Lint, simulation and synthesis jobs are added with the first RTL.

@@ -1,0 +1,26 @@
+# Simulation outputs
+*.vcd
+*.fst
+*.vvp
+*.log
+sim_build/
+obj_dir/
+results.xml
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage/
+
+# Synthesis / P&R outputs
+build/
+runs/
+*.json.bak
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp
+
+# Vendor material that must not be committed
+*.pdf
