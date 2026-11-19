@@ -15,8 +15,8 @@ The JEDEC standard is not included in this repository. Download JESD212C.01 (*GD
 | `docs/` | Microarchitecture specification and design notes |
 | `rtl/` | Synthesizable Verilog-2005 source |
 | `tb/` | Verilog-2005 testbenches and the behavioral DRAM model |
-| `cocotb/` | cocotb unit and block tests |
-| `pyuvm/` | pyuvm environment (constrained-random, scoreboard, coverage) |
+| `tests_cocotb/` | cocotb unit and block tests |
+| `tests_pyuvm/` | pyuvm environment (constrained-random, scoreboard, coverage) |
 | `sva/` | Assertion/checker modules (SystemVerilog, simulation and formal only) |
 | `scripts/` | Simulation, synthesis and CI helper scripts |
 
