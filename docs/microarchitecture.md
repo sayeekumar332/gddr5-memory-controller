@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document | `docs/microarchitecture.md` |
-| Revision | 0.1 (draft for review) |
+| Revision | 0.2 (draft for review) |
 | Reference standard | JEDEC JESD212C.01, *GDDR5 SGRAM* (obtain from jedec.org; not redistributed in this repository) |
 | Target device class | GDDR5 SGRAM, x32 mode, 8 Gb default (parameterized) |
 | RTL language | Verilog-2005 (IEEE 1364-2005) |
@@ -356,22 +356,31 @@ Inputs: request queue entries (from `gddr5_host_if` through `gddr5_addr_map`), b
 **PASR** (§7.17): MR11 masks are programmed by `gddr5_init_mrs`; this module only needs to know they exist (a masked segment is not retained).
 
 ### 6.7 `gddr5_cmd_enc` — command and address encoder
-**Spec basis:** Table 6, Table 33 (§7.19), §4.2.
+**Spec basis:** Table 17 (§7.1, the command truth table), Table 6 (§4.1), §4.2. Implemented in `rtl/gddr5_cmd_enc.v`; internal command codes are in `rtl/gddr5_cmds.vh`.
 
-**Command pins** (CS_n, RAS_n, CAS_n, WE_n):
+The encoder accepts one internal command code per cycle plus `bank` and `addr`, and registers the pin values (one cycle of latency). With `cmd_valid` low it drives DESELECT. `CKE_n` is passed through, registered, so the power manager can align it with the command (SELF REFRESH ENTRY needs `CKE_n` high). An unsupported or undefined code drives DESELECT pins and sets `cmd_err`.
 
-| Command | CS_n | RAS_n | CAS_n | WE_n |
-|---|---|---|---|---|
-| DESELECT | H | V | V | V |
-| NOP | L | H | H | H |
-| ACTIVE | L | L | H | H |
-| REFRESH / PER-BANK REFRESH | L | L | L | H |
-| MODE REGISTER SET | L | L | L | L |
-| READ | L | H | L | H |
-| WRITE (and its mask variants) | L | H | L | L |
-| PRECHARGE | L | L | H | L |
+**Command pins and qualifier pins** (Table 17). H = high, L = low, V = any valid level (the RTL drives V pins high, which keeps the number of low address pins small):
 
-(H = high, L = low, V = any valid level.) The training commands (LDFF, RDTR, WRTR) and their encodings are defined in §5; they are listed as an open item in Section 14 until that text is fully reviewed.
+| Command | CS_n | RAS_n | CAS_n | WE_n | A11 | A10 | A8 | Notes |
+|---|---|---|---|---|---|---|---|---|
+| DESELECT | H | V | V | V | V | V | V | |
+| NOP | L | H | H | H | V | V | V | |
+| MODE REGISTER SET | L | L | L | L | opcode | opcode | opcode | BA = register number, A0–A11 = opcode |
+| ACTIVE | L | L | H | H | row | row | row | BA = bank, A0–A13 = row |
+| READ / READ with AP | L | H | L | H | L | L | L / H | A8 high = auto-precharge; BA = bank; column on A0–A7 |
+| WRITE without mask (WOM / WOMA) | L | H | L | L | L | L | L / H | |
+| WRITE single-byte mask (WSM / WSMA) | L | H | L | L | L | H | L / H | |
+| WRITE double-byte mask (WDM / WDMA) | L | H | L | L | H | L | L / H | |
+| READ training (RDTR) | L | H | L | H | H | H | L | BA and other pins V |
+| WRITE training (WRTR) | L | H | L | L | H | H | L | BA and other pins V |
+| PRECHARGE (one bank) | L | L | H | L | V | V | L | BA = bank |
+| PRECHARGE ALL | L | L | H | L | V | V | H | BA = V |
+| PER-BANK REFRESH | L | L | L | H | V | V | L | BA = bank; needs MR8 enable |
+| REFRESH | L | L | L | H | V | V | H | |
+| SELF REFRESH ENTRY | L | L | L | H | V | V | V | `CKE_n` goes high in the same cycle |
+
+READ and WRITE differ only in WE_n; LDFF, RDTR and WRTR are distinguished from READ/WRITE variants by A11/A10 (LDFF: A11 high, A10 low, with READ pins). Power-down entry and exit and self-refresh exit are `CKE_n` transitions with NOP or DESELECT (Table 17, Table 32). **Not yet encoded: LDFF** — Table 17 note 7 places its data on A0–A9 and BA3, which overlaps the fixed A8/A10 qualifier pins; this needs a closer reading (open item O1).
 
 **Address phases** (Table 6). The first half is sampled with the command on rising CK_t; the second half on the next rising CK_c:
 
@@ -380,9 +389,9 @@ Inputs: request queue entries (from `gddr5_host_if` through `gddr5_addr_map`), b
 | Rising CK_t | BA3, BA2, BA1, BA0, A12 (if present), A11, A10, A9, A8 |
 | Rising CK_c | A3, A4, A5, A2, A13 (if present), A6, A0, A1, A7 |
 
-A12 exists for 2 Gb and above; A13 for 4 Gb and 8 Gb. The encoder takes `{bank, row/column, A8 flags}` and splits it into the two phases using this fixed pin order.
+A12 exists for 2 Gb and above; A13 for 4 Gb and 8 Gb; they share one physical pin. The encoder builds the logical address bits for each command and splits them across the two phases using this fixed pin order. Two parameters describe the device: `HAS_A12A13` (the shared pin exists) and `ABI_MAX_LOW`.
 
-**Address Bus Inversion** (§4.2). When ABI is enabled in MR1, the controller counts the zeros on the address pins of each phase. If the count exceeds the allowed maximum (4 pins low for 512 Mb and 1 Gb, 5 for larger densities), it inverts the whole pattern and drives ABI_n low; otherwise it sends the pattern as is with ABI_n high. The device undoes the inversion. ABI is an electrical-signaling feature, so it applies to every address phase, including mode register opcodes.
+**Address Bus Inversion** (§4.2). When ABI is enabled in MR1, the controller counts the zeros on the address pins of each phase. If the count exceeds the allowed maximum (4 pins low for 512 Mb and 1 Gb, 5 for larger densities; the pin that does not exist on small devices is not counted), it inverts the whole phase and drives ABI_n low. ABI_n is double data rate, so each address phase has its own ABI_n value; otherwise it sends the pattern as is with ABI_n high. The device undoes the inversion. ABI is an electrical-signaling feature, so it applies to every address phase, including mode register opcodes.
 
 ### 6.8 `gddr5_training` — interface training
 **Spec basis:** §5.1–5.5 and Figure 10.
@@ -535,8 +544,8 @@ These are deliberate gaps in revision 0.1, not hidden assumptions.
 
 | # | Item | Plan |
 |---|---|---|
-| O1 | Encodings and pin usage of the training commands (LDFF, RDTR, WRTR) | Read §5.4–5.5 and §7.19 in full and add to Section 6.7 |
-| O2 | Write mask variants (WOM / WSM / WDM) | Read §7.7–7.8 and define `req_wmask` handling |
+| O1 | LDFF encoding: data-bit placement (Table 17 note 7) overlaps the fixed A8/A10 qualifier pins | Re-read §5.4 and the LDFF figure; encode when resolved. RDTR and WRTR are done (Section 6.7) |
+| O2 | Write mask data handling (WOM/WSM/WDM command encodings are done) | Read §7.7–7.8 for how mask data accompanies the burst, then define `req_wmask` handling |
 | O3 | READ timing and DQ preamble details (§7.9, §7.10) | Read and add data-window timing diagrams |
 | O4 | Address training and WCK2CK protocol details (§5.2, §5.3) | Read in full; write `docs/training_algorithm.md` |
 | O5 | Exact MR field definitions (§6.1–6.11) | Generate a field table from the standard when writing `gddr5_csr` |
@@ -554,3 +563,4 @@ Decisions to confirm with the project owner: default density (8 Gb x32 assumed),
 | Rev | Date | Change |
 |---|---|---|
 | 0.1 | 2026-11-18 | Initial draft from JESD212C.01 sections 2–8 (see Section 14 for what remains) |
+| 0.2 | 2026-11-19 | Section 6.7 rewritten from Table 17 (full command encodings including write-mask variants, training commands, auto-precharge polarity); open items O1, O2 narrowed |
