@@ -26,6 +26,7 @@
 // CKE_n is passed through (registered) so that the power manager can align
 // it with the command pins (e.g. SELF REFRESH ENTRY needs CKE_n high).
 
+`timescale 1ns/1ps
 `include "gddr5_cmds.vh"
 
 module gddr5_cmd_enc #(
