@@ -22,7 +22,7 @@ lint:
 	  $(VERILATOR) --lint-only -Wall --language 1364-2005 -Irtl -y rtl $$f || exit 1; \
 	done
 
-TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm
+TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm tb_gddr5_act_window tb_gddr5_timing
 
 sim: $(addprefix $(BUILD)/,$(addsuffix .log,$(TBS)))
 
