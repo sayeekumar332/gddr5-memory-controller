@@ -290,7 +290,9 @@ State rules taken from the standard (paraphrased):
 - REFRESH and MRS need *all* banks idle. PER-BANK REFRESH needs only the target bank idle (note 8).
 - Bank-level READ/WRITE (with or without auto-precharge) are legal only in Row Active (and in certain read/write follow-on states, notes 10–11).
 
-Outputs to the scheduler: `state`, `open_row`, `row_valid`, `can_act`, `can_col`, `can_pre`.
+Outputs to the scheduler: `state`, `open_row`, `row_valid`, `row_hit`, `can_act`, `can_rd`, `can_wr`, `can_pre`, `can_refpb`, `idle`, `cmd_err`.
+
+**Implementation note (rev 0.3).** The timers that concern only one bank (tRCDRD, tRCDWR, tRAS, tRC, tRP, tRTP, write-to-precharge and tRFCPB) are down-counters inside `gddr5_bank_fsm`. `gddr5_timing` (Section 6.4) keeps only the timers that span banks. Auto-precharge is handled inside the bank: after a READ or WRITE with A8 high, the bank starts its own precharge as soon as PRE would be legal and accepts no further column command.
 
 ### 6.4 `gddr5_timing` — timing tracker
 **Spec basis:** §8.2 (Table 54), §4.3 (Table 9), Table 35.
