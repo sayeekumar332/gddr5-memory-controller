@@ -318,6 +318,8 @@ The bank-group rules (Table 9) select which parameter applies:
 | WRITE to READ (internal) | tWTRL | tWTRS |
 | READ to PRECHARGE (same bank) | tRTPL | tRTPS (BG disabled) or 1 tCK (different group) |
 
+**Implementation note (rev 0.3).** `gddr5_timing` gives one legality bit per bank for ACT, READ and WRITE (`act_ok`, `rd_ok`, `wr_ok`) and a global `pre_ok` (tPPD). The "same group" spacings use a per-group counter and the "different group" spacings use one global counter, so a command is legal only when both are zero. The bank group of bank `b` is `b[3:2]` for 16 banks and `b[2:1]` for 8 banks (Table 8). tFAW and t32AW use `gddr5_act_window`, a set of down-counter slots (4 and 32). The write-to-read spacings (`TW2RS`, `TW2RL`) are supplied by the parent as WL + burst time + tWTR, and `TRTW` as the read-to-write turnaround.
+
 The auto-precharge interactions in Table 35 (for example the minimum delay after a WRITE with auto-precharge before a following READ, which depends on WLmrs, burst length, and tWTR) are implemented as additional cross-bank counters.
 
 ### 6.5 `gddr5_sched` — scheduler and command arbiter
