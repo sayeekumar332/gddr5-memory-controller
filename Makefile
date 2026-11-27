@@ -16,6 +16,8 @@ CORE_SMALL := -Pgddr5_ctrl_core.TRCDRD=4 -Pgddr5_ctrl_core.TRCDWR=3 -Pgddr5_ctrl
 CORE_FAW   := -Pgddr5_ctrl_core.TRCDRD=2 -Pgddr5_ctrl_core.TRCDWR=2 -Pgddr5_ctrl_core.TRAS=4 -Pgddr5_ctrl_core.TRC=8 -Pgddr5_ctrl_core.TRP=2 -Pgddr5_ctrl_core.TRTP=1 -Pgddr5_ctrl_core.TW2PRE=3 -Pgddr5_ctrl_core.TRFCPB=10 -Pgddr5_ctrl_core.TRRDS=1 -Pgddr5_ctrl_core.TRRDL=2 -Pgddr5_ctrl_core.TFAW=24 -Pgddr5_ctrl_core.T32AW=60 -Pgddr5_ctrl_core.TCCDS=1 -Pgddr5_ctrl_core.TCCDL=2 -Pgddr5_ctrl_core.TW2RS=2 -Pgddr5_ctrl_core.TW2RL=3 -Pgddr5_ctrl_core.TRTW=3 -Pgddr5_ctrl_core.TPPD=1
 CORE_W32   := -Pgddr5_ctrl_core.TRCDRD=2 -Pgddr5_ctrl_core.TRCDWR=2 -Pgddr5_ctrl_core.TRAS=4 -Pgddr5_ctrl_core.TRC=8 -Pgddr5_ctrl_core.TRP=2 -Pgddr5_ctrl_core.TRTP=1 -Pgddr5_ctrl_core.TW2PRE=3 -Pgddr5_ctrl_core.TRFCPB=10 -Pgddr5_ctrl_core.TRRDS=1 -Pgddr5_ctrl_core.TRRDL=2 -Pgddr5_ctrl_core.TFAW=8 -Pgddr5_ctrl_core.T32AW=150 -Pgddr5_ctrl_core.TCCDS=1 -Pgddr5_ctrl_core.TCCDL=2 -Pgddr5_ctrl_core.TW2RS=2 -Pgddr5_ctrl_core.TW2RL=3 -Pgddr5_ctrl_core.TRTW=3 -Pgddr5_ctrl_core.TPPD=1
 
+TOP_SMALL := -Pgddr5_ctrl_top.TRCDRD=4 -Pgddr5_ctrl_top.TRCDWR=3 -Pgddr5_ctrl_top.TRAS=8 -Pgddr5_ctrl_top.TRC=14 -Pgddr5_ctrl_top.TRP=4 -Pgddr5_ctrl_top.TRTP=2 -Pgddr5_ctrl_top.TW2PRE=6 -Pgddr5_ctrl_top.TRFCPB=10 -Pgddr5_ctrl_top.TRRDS=2 -Pgddr5_ctrl_top.TRRDL=3 -Pgddr5_ctrl_top.TFAW=10 -Pgddr5_ctrl_top.T32AW=100 -Pgddr5_ctrl_top.TCCDS=2 -Pgddr5_ctrl_top.TCCDL=4 -Pgddr5_ctrl_top.TW2RS=6 -Pgddr5_ctrl_top.TW2RL=8 -Pgddr5_ctrl_top.TRTW=5 -Pgddr5_ctrl_top.TPPD=2
+
 .PHONY: all lint sim cocotb clean
 
 all: lint sim cocotb
@@ -79,6 +81,11 @@ cocotb:
 	$(MAKE) -C tests_cocotb DUT=req_fifo TAG=_d1 PARAMS="-Pgddr5_req_fifo.DEPTH=1"
 	$(MAKE) -C tests_cocotb DUT=req_fifo TAG=_d16 PARAMS="-Pgddr5_req_fifo.DEPTH=16 -Pgddr5_req_fifo.WIDTH=26"
 	$(MAKE) -C tests_cocotb DUT=req_fifo TAG=_d5 PARAMS="-Pgddr5_req_fifo.DEPTH=5 -Pgddr5_req_fifo.WIDTH=7"
+	$(MAKE) -C tests_cocotb DUT=ctrl_top
+	$(MAKE) -C tests_cocotb DUT=ctrl_top TAG=_m0 PARAMS="-Pgddr5_ctrl_top.MAP_MODE=0"
+	$(MAKE) -C tests_cocotb DUT=ctrl_top TAG=_xap PARAMS="-Pgddr5_ctrl_top.MAP_XOR=1 -Pgddr5_ctrl_top.AUTO_PRECHARGE=1"
+	$(MAKE) -C tests_cocotb DUT=ctrl_top TAG=_d1 PARAMS="$(TOP_SMALL) -Pgddr5_ctrl_top.FIFO_DEPTH=1 -Pgddr5_ctrl_top.MAP_XOR=1"
+	$(MAKE) -C tests_cocotb DUT=ctrl_top TAG=_d3 PARAMS="$(TOP_SMALL) -Pgddr5_ctrl_top.FIFO_DEPTH=3 -Pgddr5_ctrl_top.MAP_MODE=0"
 	$(MAKE) -C tests_cocotb DUT=ctrl_core
 	$(MAKE) -C tests_cocotb DUT=ctrl_core TAG=_ap PARAMS="-Pgddr5_ctrl_core.AUTO_PRECHARGE=1"
 	$(MAKE) -C tests_cocotb DUT=ctrl_core TAG=_small PARAMS="$(CORE_SMALL)"
