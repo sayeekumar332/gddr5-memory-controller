@@ -94,7 +94,8 @@ module gddr5_bank_fsm #(
     wire is_open = (state == S_ACTIVATING) || (state == S_ACTIVE);
 
     assign idle      = (state == S_IDLE);
-    assign can_act   = idle && (c_rc == 0) && (c_rp == 0) && (c_rfc == 0);
+    // idle already implies tRP (after PRE) and tRFCPB (after REFPB) elapsed.
+    assign can_act   = idle && (c_rc == 0);
     // No further column command once an auto-precharge is pending.
     assign can_rd    = is_open && (c_rcdrd == 0) && !ap_pending;
     assign can_wr    = is_open && (c_rcdwr == 0) && !ap_pending;
