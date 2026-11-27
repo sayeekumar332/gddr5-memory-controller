@@ -167,10 +167,11 @@ can_act   = idle and c_rc == 0
 can_refpb = can_act
 can_rd    = is_open and c_rcdrd == 0 and not ap_pending
 can_wr    = is_open and c_rcdwr == 0 and not ap_pending
-can_pre   = is_open and c_ras == 0 and c_pre == 0
+pre_ready = is_open and c_ras == 0 and c_pre == 0
+can_pre   = pre_ready and not ap_pending
 ```
 
-`idle` already implies that tRP (after PRE) and tRFCPB (after REFPB) have elapsed, so `can_act` does not test `c_rp` or `c_rfc` again. Once an auto-precharge is pending, no further READ or WRITE is accepted for the bank.
+`idle` already implies that tRP (after PRE) and tRFCPB (after REFPB) have elapsed, so `can_act` does not test `c_rp` or `c_rfc` again. Once an auto-precharge is pending, no further READ, WRITE or explicit PRECHARGE is accepted for the bank: the pending auto-precharge owns the precharge. (`pre_ready` only says that the timing allows a precharge.)
 
 ### 6.3 Behavior (event-driven)
 
@@ -184,7 +185,7 @@ every cycle:
             or (pre   and not can_pre)
             or (refpb and not can_refpb)
 
-on ap_fire (ap_pending and can_pre):
+on ap_fire (ap_pending and pre_ready):
     state_q <= S_PRECHARGE
     row_valid <= 0
     ap_pending <= 0
@@ -242,7 +243,7 @@ Other cases (all in `tb/tb_gddr5_bank_fsm.v`): a READ in cycle 7 delays `can_pre
 
 ### 6.5 Auto-precharge
 
-A READ or WRITE with `ap` high sets `ap_pending`. The bank then stays open, accepts no further column command, and starts its own precharge in the first cycle `can_pre` is high (tRAS, tRTP and write recovery all satisfied). `row_valid` falls and `state` becomes `S_PRECHARGE` in the next cycle. For a READ with auto-precharge in cycle 4 in the example above, the internal precharge starts in cycle 8 and the next ACT is legal in cycle 14. The scheduler issues nothing for the auto-precharge; it only watches `can_act`.
+A READ or WRITE with `ap` high sets `ap_pending`. The bank then stays open, accepts no further column command, and starts its own precharge in the first cycle `pre_ready` is high (tRAS, tRTP and write recovery all satisfied). From the READ or WRITE until the bank is idle again, `can_pre` stays low, so the scheduler cannot send the device a second PRECHARGE. `row_valid` falls and `state` becomes `S_PRECHARGE` in the next cycle. For a READ with auto-precharge in cycle 4 in the example above, the internal precharge starts in cycle 8 and the next ACT is legal in cycle 14. The scheduler issues nothing for the auto-precharge; it only watches `can_act`.
 
 ### 6.6 Reset
 
@@ -284,8 +285,9 @@ No timing result exists yet. The `can_*` outputs depend only on registers throug
 
 | Test | Where | What it covers |
 |---|---|---|
-| Directed testbench | `tb/tb_gddr5_bank_fsm.v` | 51 checks with hand-derived cycle numbers: ACT, RD, WR and PRE spacing, tRTP and write-to-precharge dominance, tRC against tRP, auto-precharge, per-bank refresh, illegal strobes, row hit and reset |
+| Directed testbench | `tb/tb_gddr5_bank_fsm.v` | 53 checks with hand-derived cycle numbers: ACT, RD, WR and PRE spacing, tRTP and write-to-precharge dominance, tRC against tRP, auto-precharge (including a stray PRE while it is pending), per-bank refresh, illegal strobes, row hit and reset |
 | cocotb, legal traffic | `tests_cocotb/test_bank_fsm.py` | 6000 cycles of mostly legal commands, with a coverage check on every command type and on auto-precharge |
+| cocotb, sparse traffic | same | 20000 cycles with idle gaps, so explicit PRE and auto-precharge both occur, with coverage checks |
 | cocotb, illegal strobes | same | 6000 cycles with 40 % deliberately illegal strobes; the strobe must be ignored and `cmd_err` must follow |
 | cocotb, random reset | same | Reset at random points; all state must clear |
 | Timing variants | `Makefile` | The cocotb tests run with the default timings, a small set (4/3/8/14/4/2/6/10) and a set with every spacing at 1 cycle |
@@ -314,3 +316,4 @@ Not yet covered: formal properties (planned in phase 5) and a check against a DR
 | Rev | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-27 | First version, written from the implemented RTL |
+| 1.1 | 2026-11-27 | `can_pre` is low while an auto-precharge is pending (fix found while preparing the controller-core integration) |
