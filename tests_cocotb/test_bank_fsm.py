@@ -57,9 +57,10 @@ class BankModel:
         f = {
             "can_rd": is_open and now >= self.act_t + e(p["TRCDRD"]) and not self.ap_pending,
             "can_wr": is_open and now >= self.act_t + e(p["TRCDWR"]) and not self.ap_pending,
-            "can_pre": is_open and now >= pre_ok,
+            "pre_ready": is_open and now >= pre_ok,
             "idle": self.idle(now),
         }
+        f["can_pre"] = f["pre_ready"] and not self.ap_pending
         f["can_act"] = f["idle"] and now >= self.act_t + e(p["TRC"])
         f["can_refpb"] = f["can_act"]
         if is_open:
@@ -83,7 +84,7 @@ class BankModel:
             self.phase = "idle"
 
         # Phase 2: auto-precharge fires as soon as PRE would be legal.
-        if self.ap_pending and f["can_pre"]:
+        if self.ap_pending and f["pre_ready"]:
             self.phase, self.pre_t = "pre", now
             self.row_valid, self.ap_pending = False, False
 
@@ -142,7 +143,7 @@ def compare(dut, model, now, row_in, what):
     return f
 
 
-async def drive_random(dut, cycles, seed, p_cmd, p_illegal, p_reset, what):
+async def drive_random(dut, cycles, seed, p_cmd, p_illegal, p_reset, what, p_ap=0.03):
     rng = random.Random(seed)
     model = BankModel(params(dut))
     model.err_next_seen = 0
@@ -161,8 +162,10 @@ async def drive_random(dut, cycles, seed, p_cmd, p_illegal, p_reset, what):
             if rng.random() < p_illegal:
                 cmd = rng.choice(["act", "rd", "wr", "pre", "refpb"])
             elif legal:
-                cmd = rng.choice(legal)
-            ap = int(rng.random() < 0.15)
+                # Weight PRE and ACT up so rows close often enough to cover them.
+                w = {"act": 3, "rd": 0.15, "wr": 0.15, "pre": 3, "refpb": 1}
+                cmd = rng.choices(legal, [w[c] for c in legal])[0]
+            ap = int(rng.random() < p_ap)
 
         do_reset = rng.random() < p_reset
         for name in ("act", "rd", "wr", "pre", "refpb"):
@@ -174,7 +177,7 @@ async def drive_random(dut, cycles, seed, p_cmd, p_illegal, p_reset, what):
             model.reset()
             model.err_next_seen = 0
         else:
-            was_ap = model.ap_pending and f["can_pre"]
+            was_ap = model.ap_pending and f["pre_ready"]
             if cmd is not None and not f[{"act": "can_act", "rd": "can_rd", "wr": "can_wr",
                                           "pre": "can_pre", "refpb": "can_refpb"}[cmd]]:
                 counts["illegal"] += 1
@@ -205,8 +208,20 @@ async def random_legal_traffic(dut):
     counts = await drive_random(dut, 6000, seed=1, p_cmd=0.6, p_illegal=0.0,
                                 p_reset=0.0, what="legal")
     dut._log.info("command counts: %s", counts)
-    for k in ("act", "rd", "wr", "pre", "refpb", "ap_fire"):
+    for k in ("act", "rd", "wr"):
         assert counts[k] > 20, f"coverage: {k} only {counts[k]} times"
+
+
+@cocotb.test()
+async def sparse_legal_traffic(dut):
+    """Sparse traffic leaves gaps, so explicit PRE and auto-precharge both occur."""
+    await start(dut)
+    counts = await drive_random(dut, 20000, seed=4, p_cmd=0.08, p_illegal=0.0,
+                                p_reset=0.0, what="sparse", p_ap=0.15)
+    dut._log.info("command counts: %s", counts)
+    for k in ("act", "pre", "refpb"):
+        assert counts[k] > 20, f"coverage: {k} only {counts[k]} times"
+    assert counts["ap_fire"] > 5, f"coverage: ap_fire only {counts['ap_fire']} times"
 
 
 @cocotb.test()

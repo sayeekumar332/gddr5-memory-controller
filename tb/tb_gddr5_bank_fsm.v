@@ -163,7 +163,10 @@ module tb_gddr5_bank_fsm;
         check("T5 c5 still open",    row_valid, 1);
         idle_cycles(3);                      // cycle 8: auto-PRE fires
         check("T5 c8 state",         state, S_ACTIVE);
-        idle_cycles(1);                      // cycle 9
+        check("T5 c8 AP owns precharge", can_pre, 0);
+        pre = 1'b1;                          // an explicit PRE now is illegal
+        tick;                                // cycle 9
+        check("T5 c9 stray PRE flagged", cmd_err, 1);
         check("T5 c9 state",         state, S_PRECHARGE);
         check("T5 c9 row_valid",     row_valid, 0);
         idle_cycles(4);                      // cycle 13
