@@ -22,7 +22,7 @@ lint:
 	  $(VERILATOR) --lint-only -Wall --language 1364-2005 -Irtl -y rtl $$f || exit 1; \
 	done
 
-TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm tb_gddr5_act_window tb_gddr5_timing
+TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm tb_gddr5_act_window tb_gddr5_timing tb_gddr5_sched
 
 sim: $(addprefix $(BUILD)/,$(addsuffix .log,$(TBS)))
 
@@ -64,6 +64,8 @@ cocotb:
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_nobg PARAMS="$(TIM_NOBG)"
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_lsb1 PARAMS="$(TIM_LSB1)"
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_odd PARAMS="$(TIM_ODD)"
+	$(MAKE) -C tests_cocotb DUT=sched
+	$(MAKE) -C tests_cocotb DUT=sched TAG=_ap PARAMS="-Pgddr5_sched.AUTO_PRECHARGE=1"
 
 clean:
 	rm -rf $(BUILD)

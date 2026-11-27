@@ -339,6 +339,8 @@ Inputs: request queue entries (from `gddr5_host_if` through `gddr5_addr_map`), b
 
 **Policy (release 1):** open-page, row-hit first, then oldest first. Reads and writes are batched to reduce bus turnaround (tRTW and tWTR penalties); the batch size is a CSR parameter. Same-address ordering is preserved. Anything more advanced (priority classes, QoS) is out of scope for release 1.
 
+**Release-1 step (rev 0.3).** The first implementation, `gddr5_sched`, is the in-order subset: it works one decoded request at a time, in arrival order, and issues a column command on a row hit, PRECHARGE then ACTIVE on a row miss, or ACTIVE on an empty bank. A command issues only when both the bank's own flag (`gddr5_bank_fsm`) and the cross-bank flag (`gddr5_timing`) are high. A `hold` input lets the initialization, refresh and training sequencers take the command bus. An `AUTO_PRECHARGE` parameter selects open-page or auto-precharge on every column command. Row-hit-first reordering over a request queue, batching, and the refresh priority above are added in later steps.
+
 **One command per CK.** The scheduler chooses at most one command each cycle. Because of F2, every command is accompanied by its two-phase address, which `gddr5_cmd_enc` produces.
 
 ### 6.6 `gddr5_refresh` — refresh, self-refresh, power-down

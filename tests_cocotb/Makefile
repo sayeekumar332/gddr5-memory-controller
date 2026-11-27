@@ -1,6 +1,7 @@
 # cocotb tests (Icarus Verilog, Verilog-2005)
 #   make                       run the gddr5_cmd_enc tests
 #   make DUT=bank_fsm          run the gddr5_bank_fsm tests
+#   make DUT=sched            run the gddr5_sched tests
 #   make DUT=timing           run the gddr5_timing tests
 #   make DUT=bank_fsm TAG=_small PARAMS="-Pgddr5_bank_fsm.TRCDRD=4 ..."
 #                              same tests with other timing parameters
@@ -22,6 +23,9 @@ COCOTB_TEST_MODULES = test_bank_fsm
 else ifeq ($(DUT),timing)
 TOPLEVEL            = gddr5_timing
 COCOTB_TEST_MODULES = test_timing
+else ifeq ($(DUT),sched)
+TOPLEVEL            = gddr5_sched
+COCOTB_TEST_MODULES = test_sched
 else
 $(error unknown DUT '$(DUT)')
 endif
