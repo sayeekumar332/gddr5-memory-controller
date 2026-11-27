@@ -64,6 +64,8 @@ cocotb:
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_nobg PARAMS="$(TIM_NOBG)"
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_lsb1 PARAMS="$(TIM_LSB1)"
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_odd PARAMS="$(TIM_ODD)"
+	$(MAKE) -C tests_cocotb DUT=sched
+	$(MAKE) -C tests_cocotb DUT=sched TAG=_ap PARAMS="-Pgddr5_sched.AUTO_PRECHARGE=1"
 
 clean:
 	rm -rf $(BUILD)
