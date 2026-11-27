@@ -1,6 +1,7 @@
 # cocotb tests (Icarus Verilog, Verilog-2005)
 #   make                       run the gddr5_cmd_enc tests
 #   make DUT=bank_fsm          run the gddr5_bank_fsm tests
+#   make DUT=ctrl_core        run the end-to-end controller-core tests
 #   make DUT=sched            run the gddr5_sched tests
 #   make DUT=timing           run the gddr5_timing tests
 #   make DUT=bank_fsm TAG=_small PARAMS="-Pgddr5_bank_fsm.TRCDRD=4 ..."
@@ -26,11 +27,18 @@ COCOTB_TEST_MODULES = test_timing
 else ifeq ($(DUT),sched)
 TOPLEVEL            = gddr5_sched
 COCOTB_TEST_MODULES = test_sched
+else ifeq ($(DUT),ctrl_core)
+TOPLEVEL            = gddr5_ctrl_core
+COCOTB_TEST_MODULES = test_ctrl_core
 else
 $(error unknown DUT '$(DUT)')
 endif
 
+ifeq ($(DUT),ctrl_core)
+VERILOG_SOURCES     = $(filter-out %.vh,$(wildcard $(RTL_DIR)/*.v))
+else
 VERILOG_SOURCES     = $(RTL_DIR)/$(TOPLEVEL).v $(if $(filter timing,$(DUT)),$(RTL_DIR)/gddr5_act_window.v)
+endif
 COMPILE_ARGS       += -g2005 -I$(RTL_DIR) $(PARAMS)
 SIM_BUILD           = sim_build_$(DUT)$(TAG)
 COCOTB_RESULTS_FILE = results_$(DUT)$(TAG).xml
