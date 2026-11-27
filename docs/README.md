@@ -4,6 +4,7 @@
 |---|---|---|
 | [microarchitecture.md](microarchitecture.md) | Draft 0.2 | Controller architecture, interfaces, module specifications and JEDEC traceability |
 | [../rtl/gddr5_cmd_encoder_README.md](../rtl/gddr5_cmd_encoder_README.md) | 1.0 | Module specification for the command and address encoder |
+| [../rtl/gddr5_bank_fsm_README.md](../rtl/gddr5_bank_fsm_README.md) | 1.0 | Module specification for the per-bank state machine and timers |
 
 Planned: `spec_trace.md` (section-by-section traceability), `training_algorithm.md`, `verification_plan.md`.
 
