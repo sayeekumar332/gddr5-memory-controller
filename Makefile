@@ -26,7 +26,7 @@ lint:
 	  $(VERILATOR) --lint-only -Wall --language 1364-2005 -Irtl -y rtl $$f || exit 1; \
 	done
 
-TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm tb_gddr5_act_window tb_gddr5_timing tb_gddr5_sched tb_gddr5_req_fifo
+TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm tb_gddr5_act_window tb_gddr5_timing tb_gddr5_sched tb_gddr5_req_fifo tb_gddr5_addr_map
 
 sim: $(addprefix $(BUILD)/,$(addsuffix .log,$(TBS)))
 
@@ -70,6 +70,11 @@ cocotb:
 	$(MAKE) -C tests_cocotb DUT=timing TAG=_odd PARAMS="$(TIM_ODD)"
 	$(MAKE) -C tests_cocotb DUT=sched
 	$(MAKE) -C tests_cocotb DUT=sched TAG=_ap PARAMS="-Pgddr5_sched.AUTO_PRECHARGE=1"
+	$(MAKE) -C tests_cocotb DUT=addr_map TAG=_m0 PARAMS="-Pgddr5_addr_map.MODE=0 -Pgddr5_addr_map.XOR_BANK=0"
+	$(MAKE) -C tests_cocotb DUT=addr_map TAG=_m1 PARAMS="-Pgddr5_addr_map.MODE=1 -Pgddr5_addr_map.XOR_BANK=0"
+	$(MAKE) -C tests_cocotb DUT=addr_map TAG=_m0x PARAMS="-Pgddr5_addr_map.MODE=0 -Pgddr5_addr_map.XOR_BANK=1"
+	$(MAKE) -C tests_cocotb DUT=addr_map TAG=_m1x PARAMS="-Pgddr5_addr_map.MODE=1 -Pgddr5_addr_map.XOR_BANK=1"
+	$(MAKE) -C tests_cocotb DUT=addr_map TAG=_w PARAMS="-Pgddr5_addr_map.MODE=1 -Pgddr5_addr_map.XOR_BANK=1 -Pgddr5_addr_map.ROW_W=10 -Pgddr5_addr_map.COL_W=5"
 	$(MAKE) -C tests_cocotb DUT=req_fifo
 	$(MAKE) -C tests_cocotb DUT=req_fifo TAG=_d1 PARAMS="-Pgddr5_req_fifo.DEPTH=1"
 	$(MAKE) -C tests_cocotb DUT=req_fifo TAG=_d16 PARAMS="-Pgddr5_req_fifo.DEPTH=16 -Pgddr5_req_fifo.WIDTH=26"

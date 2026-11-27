@@ -2,6 +2,7 @@
 #   make                       run the gddr5_cmd_enc tests
 #   make DUT=bank_fsm          run the gddr5_bank_fsm tests
 #   make DUT=ctrl_core        run the end-to-end controller-core tests
+#   make DUT=addr_map         run the gddr5_addr_map tests
 #   make DUT=req_fifo         run the gddr5_req_fifo tests
 #   make DUT=sched            run the gddr5_sched tests
 #   make DUT=timing           run the gddr5_timing tests
@@ -28,6 +29,9 @@ COCOTB_TEST_MODULES = test_timing
 else ifeq ($(DUT),sched)
 TOPLEVEL            = gddr5_sched
 COCOTB_TEST_MODULES = test_sched
+else ifeq ($(DUT),addr_map)
+TOPLEVEL            = gddr5_addr_map
+COCOTB_TEST_MODULES = test_addr_map
 else ifeq ($(DUT),req_fifo)
 TOPLEVEL            = gddr5_req_fifo
 COCOTB_TEST_MODULES = test_req_fifo
