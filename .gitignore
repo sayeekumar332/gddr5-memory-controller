@@ -3,9 +3,9 @@
 *.fst
 *.vvp
 *.log
-sim_build/
+sim_build*/
 obj_dir/
-results.xml
+results*.xml
 __pycache__/
 *.pyc
 .pytest_cache/
