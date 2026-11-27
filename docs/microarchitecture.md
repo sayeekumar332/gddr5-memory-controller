@@ -341,6 +341,8 @@ Inputs: request queue entries (from `gddr5_host_if` through `gddr5_addr_map`), b
 
 **Release-1 step (rev 0.3).** The first implementation, `gddr5_sched`, is the in-order subset: it works one decoded request at a time, in arrival order, and issues a column command on a row hit, PRECHARGE then ACTIVE on a row miss, or ACTIVE on an empty bank. A command issues only when both the bank's own flag (`gddr5_bank_fsm`) and the cross-bank flag (`gddr5_timing`) are high. A `hold` input lets the initialization, refresh and training sequencers take the command bus. An `AUTO_PRECHARGE` parameter selects open-page or auto-precharge on every column command. Row-hit-first reordering over a request queue, batching, and the refresh priority above are added in later steps.
 
+**Controller core (rev 0.3).** `gddr5_ctrl_core` joins the command path: `gddr5_sched`, sixteen `gddr5_bank_fsm`, `gddr5_timing` and `gddr5_cmd_enc`. A request goes in on a valid/ready handshake and the encoded command pins come out one cycle after the command is chosen. The core adds no policy of its own. It is verified end to end in `tests_cocotb/test_ctrl_core.py`, which checks the issued command sequence against an independent open-row tracker, every command against the bank and cross-bank reference models, and the encoder pins against the encoder reference. It runs in six parameter sets, including two with a tight tFAW and t32AW so that the activate windows bind in an in-order stream.
+
 **One command per CK.** The scheduler chooses at most one command each cycle. Because of F2, every command is accompanied by its two-phase address, which `gddr5_cmd_enc` produces.
 
 ### 6.6 `gddr5_refresh` — refresh, self-refresh, power-down
