@@ -19,7 +19,7 @@ all: lint sim cocotb
 lint:
 	@for f in $(RTL_FILES); do \
 	  echo "lint $$f"; \
-	  $(VERILATOR) --lint-only -Wall --language 1364-2005 -Irtl $$f || exit 1; \
+	  $(VERILATOR) --lint-only -Wall --language 1364-2005 -Irtl -y rtl $$f || exit 1; \
 	done
 
 TBS := tb_gddr5_cmd_enc tb_gddr5_bank_fsm
