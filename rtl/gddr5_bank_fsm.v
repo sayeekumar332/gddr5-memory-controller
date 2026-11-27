@@ -99,15 +99,18 @@ module gddr5_bank_fsm #(
     // No further column command once an auto-precharge is pending.
     assign can_rd    = is_open && (c_rcdrd == 0) && !ap_pending;
     assign can_wr    = is_open && (c_rcdwr == 0) && !ap_pending;
-    assign can_pre   = is_open && (c_ras == 0) && (c_pre == 0);
+    // PRE timing is met (tRAS, tRTP, write recovery).
+    wire   pre_ready = is_open && (c_ras == 0) && (c_pre == 0);
+    // A pending auto-precharge owns the precharge: no explicit PRE is accepted.
+    assign can_pre   = pre_ready && !ap_pending;
     assign can_refpb = can_act;
     assign row_hit   = row_valid && (row == open_row);
 
     // Value c_pre will hold next cycle if nothing reloads it.
     wire [CW-1:0] c_pre_dec = (c_pre != 0) ? (c_pre - 1'b1) : {CW{1'b0}};
 
-    // Auto-precharge starts as soon as PRE would be legal.
-    wire ap_fire = ap_pending && can_pre;
+    // Auto-precharge starts as soon as PRE timing is met.
+    wire ap_fire = ap_pending && pre_ready;
 
     wire bad_cmd = (act   && !can_act)
                 || (rd    && !can_rd)
