@@ -2,6 +2,7 @@
 #   make                       run the gddr5_cmd_enc tests
 #   make DUT=bank_fsm          run the gddr5_bank_fsm tests
 #   make DUT=ctrl_core        run the end-to-end controller-core tests
+#   make DUT=ctrl_top         run the end-to-end top-level tests
 #   make DUT=addr_map         run the gddr5_addr_map tests
 #   make DUT=req_fifo         run the gddr5_req_fifo tests
 #   make DUT=sched            run the gddr5_sched tests
@@ -29,6 +30,9 @@ COCOTB_TEST_MODULES = test_timing
 else ifeq ($(DUT),sched)
 TOPLEVEL            = gddr5_sched
 COCOTB_TEST_MODULES = test_sched
+else ifeq ($(DUT),ctrl_top)
+TOPLEVEL            = gddr5_ctrl_top
+COCOTB_TEST_MODULES = test_ctrl_top
 else ifeq ($(DUT),addr_map)
 TOPLEVEL            = gddr5_addr_map
 COCOTB_TEST_MODULES = test_addr_map
@@ -42,7 +46,7 @@ else
 $(error unknown DUT '$(DUT)')
 endif
 
-ifeq ($(DUT),ctrl_core)
+ifneq ($(filter ctrl_core ctrl_top,$(DUT)),)
 VERILOG_SOURCES     = $(filter-out %.vh,$(wildcard $(RTL_DIR)/*.v))
 else
 VERILOG_SOURCES     = $(RTL_DIR)/$(TOPLEVEL).v $(if $(filter timing,$(DUT)),$(RTL_DIR)/gddr5_act_window.v)
